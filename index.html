@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proper Hospitality — Intelligence Hub</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root {
+  --bg: #0D1117;
+  --bg-card: #161B22;
+  --bg-card-hover: #1C2230;
+  --bg-surface: #21262D;
+  --gold: #C8A951;
+  --gold-dim: rgba(200,169,81,0.15);
+  --gold-glow: rgba(200,169,81,0.3);
+  --warm: #E8D5B7;
+  --cream: #F5F0E8;
+  --green: #3FB950;
+  --green-dim: rgba(63,185,80,0.15);
+  --red: #F85149;
+  --red-dim: rgba(248,81,73,0.15);
+  --orange: #D29922;
+  --teal: #58A6FF;
+  --border: rgba(200,169,81,0.12);
+  --border-subtle: rgba(255,255,255,0.06);
+  --text: #E6EDF3;
+  --text-secondary: #8B949E;
+  --text-dim: #484F58;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.nav { background: linear-gradient(180deg, #1A1F2B 0%, #0D1117 100%); padding: 0 2rem; display: flex; align-items: center; height: 64px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+.nav h1 { color: var(--cream); font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.3rem; font-weight: 600; letter-spacing: 1px; }
+.nav h1 span { color: var(--gold); }
+.nav-tabs { display: flex; margin-left: 2.5rem; gap: 0; height: 100%; }
+.nav-tab { color: var(--text-secondary); padding: 0 1rem; cursor: pointer; display: flex; align-items: center; font-size: 0.8rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.25s ease; letter-spacing: 0.3px; text-decoration: none; }
+.nav-tab:hover { color: var(--cream); background: rgba(200,169,81,0.05); }
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.nav-right { margin-left: auto; color: var(--text-dim); font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase; }
+
+.page { display: none; padding: 2rem; max-width: 1600px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* HERO */
+.hero { text-align: center; padding: 3rem 0 2rem; }
+.hero h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 2.4rem; color: var(--cream); font-weight: 600; margin-bottom: 0.5rem; }
+.hero p { color: var(--text-secondary); font-size: 0.9rem; max-width: 600px; margin: 0 auto; }
+
+/* PROPERTY CARDS */
+.property-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+.property-card { background: var(--bg-card); border-radius: 16px; padding: 2rem; border: 1px solid var(--border); cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; text-decoration: none; display: block; }
+.property-card:hover { border-color: var(--gold-glow); box-shadow: 0 0 30px rgba(200,169,81,0.12); transform: translateY(-2px); }
+.property-card h3 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.5rem; color: var(--cream); margin-bottom: 0.3rem; }
+.property-card .code { color: var(--gold); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; margin-bottom: 1rem; }
+.property-card .kpis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+.kpi { text-align: center; }
+.kpi .kpi-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.3rem; }
+.kpi .kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--cream); }
+.kpi .kpi-sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem; }
+.positive { color: var(--green) !important; font-weight: 600; }
+.negative { color: var(--red) !important; font-weight: 600; }
+
+/* PORTFOLIO STATS */
+.portfolio-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--bg-card); border-radius: 12px; padding: 1.2rem 1.5rem; border: 1px solid var(--border); }
+.stat-card .label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; font-weight: 500; }
+.stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--cream); }
+.stat-card .sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.3rem; }
+
+/* TABLES + CHARTS */
+.card { background: var(--bg-card); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border-subtle); margin-bottom: 1.5rem; }
+.card h2 { font-size: 0.85rem; font-weight: 600; color: var(--gold); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.8px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.full-width { margin-bottom: 1.5rem; }
+.chart-container { position: relative; height: 350px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+th { background: var(--bg-surface); color: var(--gold); padding: 0.6rem 0.8rem; text-align: left; font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
+td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border-subtle); color: var(--text); }
+tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+tr:hover { background: rgba(200,169,81,0.05); }
+tr.highlight { background: var(--gold-dim) !important; font-weight: 600; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+.badge-green { background: var(--green-dim); color: var(--green); }
+.badge-red { background: var(--red-dim); color: var(--red); }
+.badge-gold { background: var(--gold-dim); color: var(--gold); }
+
+/* LOADING */
+.loading { text-align: center; padding: 4rem; color: var(--text-dim); }
+.loading .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 3px; }
+select { background: var(--bg-surface) !important; color: var(--gold) !important; border: 1px solid var(--border) !important; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; }
+
+@media (max-width: 1024px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .property-grid { grid-template-columns: 1fr; }
+  .portfolio-stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <h1>Proper <span>Intelligence Hub</span></h1>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('home')">Portfolio</div>
+    <div class="nav-tab" onclick="showPage('portfolio-revenue')">Revenue</div>
+    <div class="nav-tab" onclick="showPage('portfolio-reviews')">Reviews</div>
+    <div class="nav-tab" onclick="showPage('portfolio-ops')">Operations</div>
+  </div>
+  <div class="nav-right">
+    <select id="dateFilter" onchange="setDateFilter(this.value)">
+      <option value="ytd">YTD (2026)</option>
+      <option value="q1">Q1 2026</option>
+      <option value="thisMonth">This Month</option>
+      <option value="trailing3">Trailing 3 Months</option>
+      <option value="all" selected>All Data</option>
+    </select>
+    Live from Snowflake
+  </div>
+</div>
+
+<!-- HOME / PROPERTY SELECTOR -->
+<div id="home" class="page active">
+  <div class="hero">
+    <h2>Proper Hospitality</h2>
+    <p>Portfolio intelligence across all properties. Select a hotel for the full 9-tab deep dive, or use the portfolio tabs above for cross-property analysis.</p>
+  </div>
+  <div class="portfolio-stats" id="portfolio-stats">
+    <div class="loading"><div class="spinner"></div>Loading portfolio data...</div>
+  </div>
+  <div class="property-grid" id="property-grid"></div>
+</div>
+
+<!-- PORTFOLIO: REVENUE COMPARISON -->
+<div id="portfolio-revenue" class="page">
+  <div class="portfolio-stats" id="port-rev-stats"></div>
+  <div class="full-width"><div class="card"><h2>Monthly Revenue — All Properties</h2><div class="chart-container"><canvas id="portRevChart"></canvas></div></div></div>
+  <div class="full-width"><div class="card"><h2>Property Performance — Revenue, ADR, Occupancy</h2><div id="port-rev-table"></div></div></div>
+  <div class="grid-2">
+    <div class="card"><h2>ADR Comparison — Monthly</h2><div class="chart-container"><canvas id="portAdrChart"></canvas></div></div>
+    <div class="card"><h2>Revenue vs Budget — By Property</h2><div class="chart-container"><canvas id="portBudgetChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- PORTFOLIO: REVIEWS COMPARISON -->
+<div id="portfolio-reviews" class="page">
+  <div class="portfolio-stats" id="port-review-stats"></div>
+  <div class="full-width"><div class="card"><h2>Guest Ratings — All Properties</h2><div class="chart-container" style="height:400px"><canvas id="portReviewRadar"></canvas></div></div></div>
+  <div class="full-width"><div class="card"><h2>Review Scores by Property</h2><div id="port-review-table"></div></div></div>
+</div>
+
+<!-- PORTFOLIO: OPERATIONS -->
+<div id="portfolio-ops" class="page">
+  <div class="portfolio-stats" id="port-ops-stats"></div>
+  <div class="grid-2">
+    <div class="card"><h2>Glitch Incidents — By Property</h2><div class="chart-container"><canvas id="portGlitchChart"></canvas></div></div>
+    <div class="card"><h2>Guest Survey Scores — By Property</h2><div class="chart-container"><canvas id="portSurveyChart"></canvas></div></div>
+  </div>
+  <div class="full-width"><div class="card"><h2>Channel Mix — By Property</h2><div id="port-channel-table"></div></div></div>
+</div>
+
+<script>
+let allData = {};
+let currentFilter = 'all';
+let chartInstances = [];
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function setDateFilter(val) { currentFilter = val; destroyCharts(); renderPortfolio(); }
+function destroyCharts() { chartInstances.forEach(c => c.destroy()); chartInstances = []; }
+function makeChart(ctx, config) { const c = new Chart(ctx, config); chartInstances.push(c); return c; }
+
+Chart.defaults.color = '#8B949E';
+Chart.defaults.borderColor = 'rgba(200,169,81,0.1)';
+Chart.defaults.plugins.legend.labels.color = '#8B949E';
+Chart.defaults.plugins.legend.labels.font = { size: 11, family: 'Inter' };
+Chart.defaults.scale.grid = { color: 'rgba(255,255,255,0.04)' };
+
+function fmt(v, type='num') {
+  if (v === null || v === undefined || v === 'None' || v === '') return '-';
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  if (type === 'money') return n >= 1e6 ? `$${(n/1e6).toFixed(1)}M` : n >= 1000 ? `$${n.toLocaleString('en-US',{maximumFractionDigits:0})}` : `$${n.toFixed(2)}`;
+  if (type === 'pct') return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
+  if (type === 'rating') return n.toFixed(2);
+  if (type === 'int') return Math.round(n).toLocaleString();
+  return n.toFixed(1);
+}
+function pctClass(v) { const n = parseFloat(v); return isNaN(n) ? '' : n >= 0 ? 'positive' : 'negative'; }
+function makeTable(headers, rows, opts={}) {
+  let html = '<table><thead><tr>';
+  headers.forEach((h,i) => html += `<th class="${opts.align?.[i]||''}">${h}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach((r,idx) => {
+    const cls = opts.highlightFirst && idx === 0 ? ' class="highlight"' : '';
+    html += `<tr${cls}>`;
+    r.forEach((c,i) => html += `<td class="${opts.align?.[i]||''}">${c}</td>`);
+    html += '</tr>';
+  });
+  return html + '</tbody></table>';
+}
+
+function filterMonths(months) {
+  if (currentFilter === 'all') return months;
+  const now = '2026-03';
+  return months.filter(m => {
+    const k = m[0];
+    if (currentFilter === 'ytd') return k >= '2026-01' && k <= now;
+    if (currentFilter === 'q1') return k >= '2026-01' && k <= '2026-03';
+    if (currentFilter === 'thisMonth') return k === now;
+    if (currentFilter === 'trailing3') return k >= '2026-01' && k <= now;
+    return true;
+  });
+}
+
+// Aggregate daily revenue data into monthly for a property
+function aggregateRevenue(data) {
+  const raw = data.revenue_monthly?.rows || [];
+  const monthMap = {};
+  raw.forEach(r => {
+    const d = r[0];
+    const key = d.length === 8 ? d.slice(0,4)+'-'+d.slice(4,6) : d.length === 10 ? d.slice(0,7) : d;
+    if (!monthMap[key]) monthMap[key] = {rooms:0,rev:0,budRooms:0,budRev:0,stlyRooms:0,stlyRev:0};
+    const m = monthMap[key];
+    m.rooms += parseFloat(r[1])||0; m.rev += parseFloat(r[3])||0;
+    m.budRooms += parseFloat(r[4])||0; m.budRev += parseFloat(r[6])||0;
+    m.stlyRooms += parseFloat(r[7])||0; m.stlyRev += parseFloat(r[9])||0;
+  });
+  return Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,m]) => ({
+    month: k, rooms: m.rooms, rev: m.rev, adr: m.rooms>0?m.rev/m.rooms:0,
+    budRev: m.budRev, stlyRev: m.stlyRev, budRooms: m.budRooms, stlyRooms: m.stlyRooms
+  }));
+}
+
+function renderPortfolio() {
+  const propColors = { smp: '#C8A951', austin: '#58A6FF' };
+  const summaries = {};
+  let totalPortRev = 0, totalPortBud = 0, totalPortStly = 0, totalPortRooms = 0, totalPortReviews = 0, totalPortGlitches = 0;
+
+  // Build summaries per property
+  PORTFOLIO_ORDER.forEach(pid => {
+    const cfg = PROPERTIES[pid];
+    const d = allData[pid];
+    if (!d) return;
+
+    const monthly = aggregateRevenue(d);
+    const filtered = filterMonths(monthly.map(m=>[m.month,m])).map(m=>m[1]) || monthly;
+    const use = filtered.length > 0 ? filtered : monthly.slice(-12);
+
+    const totalRev = use.reduce((s,m) => s+m.rev, 0);
+    const totalBud = use.reduce((s,m) => s+m.budRev, 0);
+    const totalStly = use.reduce((s,m) => s+m.stlyRev, 0);
+    const totalRooms = use.reduce((s,m) => s+m.rooms, 0);
+    const avgAdr = totalRooms > 0 ? totalRev/totalRooms : 0;
+    const vsBud = totalBud > 0 ? (totalRev-totalBud)/totalBud*100 : 0;
+    const vsStly = totalStly > 0 ? (totalRev-totalStly)/totalStly*100 : 0;
+
+    const revSrc = d.reviews_by_source?.rows || [];
+    const totalReviews = revSrc.reduce((s,r)=>s+parseInt(parseFloat(r[1])||0),0);
+    const wAvgRating = totalReviews > 0 ? revSrc.reduce((s,r)=>s+(parseFloat(r[2])||0)*(parseFloat(r[1])||0),0)/totalReviews : 0;
+
+    const glitchCount = d.glitch_reports?.rows?.length || 0;
+    const surveyOverall = d.survey_overall?.rows?.[0] || [];
+    const nps = parseFloat(surveyOverall[2]) || 0;
+
+    summaries[pid] = { totalRev, totalBud, totalStly, totalRooms, avgAdr, vsBud, vsStly, totalReviews, wAvgRating, glitchCount, nps, monthly, surveyOverall };
+    totalPortRev += totalRev; totalPortBud += totalBud; totalPortStly += totalStly;
+    totalPortRooms += totalRooms; totalPortReviews += totalReviews; totalPortGlitches += glitchCount;
+  });
+
+  const portVsBud = totalPortBud > 0 ? (totalPortRev-totalPortBud)/totalPortBud*100 : 0;
+  const portVsStly = totalPortStly > 0 ? (totalPortRev-totalPortStly)/totalPortStly*100 : 0;
+
+  // Portfolio stats
+  document.getElementById('portfolio-stats').innerHTML =
+    `<div class="stat-card"><div class="label">Portfolio Revenue</div><div class="value">${fmt(totalPortRev,'money')}</div><div class="sub">${PORTFOLIO_ORDER.length} properties</div></div>` +
+    `<div class="stat-card"><div class="label">Total Rooms Sold</div><div class="value">${fmt(totalPortRooms,'int')}</div></div>` +
+    `<div class="stat-card"><div class="label">vs Budget</div><div class="value ${portVsBud>=0?'positive':'negative'}">${fmt(portVsBud,'pct')}</div></div>` +
+    `<div class="stat-card"><div class="label">vs STLY</div><div class="value ${portVsStly>=0?'positive':'negative'}">${fmt(portVsStly,'pct')}</div></div>` +
+    `<div class="stat-card"><div class="label">Total Reviews</div><div class="value">${fmt(totalPortReviews,'int')}</div></div>` +
+    `<div class="stat-card"><div class="label">Total Glitch Reports</div><div class="value">${totalPortGlitches}</div></div>`;
+
+  // Property cards
+  let cardsHtml = '';
+  PORTFOLIO_ORDER.forEach(pid => {
+    const cfg = PROPERTIES[pid];
+    const s = summaries[pid];
+    if (!s) return;
+    cardsHtml += `
+    <a class="property-card" href="dashboard.html?property=${pid}">
+      <div class="code">${cfg.code} &mdash; ${cfg.name}</div>
+      <h3>${cfg.shortName}</h3>
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">${fmt(s.totalRev,'money')}</div><div class="kpi-sub ${pctClass(s.vsBud)}">${fmt(s.vsBud,'pct')} vs budget</div></div>
+        <div class="kpi"><div class="kpi-label">ADR</div><div class="kpi-value">$${s.avgAdr.toFixed(0)}</div><div class="kpi-sub">${fmt(s.totalRooms,'int')} rooms</div></div>
+        <div class="kpi"><div class="kpi-label">Reviews</div><div class="kpi-value">${s.wAvgRating.toFixed(2)}</div><div class="kpi-sub">${s.totalReviews} reviews</div></div>
+      </div>
+      <div class="kpis" style="margin-top:0.8rem">
+        <div class="kpi"><div class="kpi-label">vs STLY</div><div class="kpi-value ${pctClass(s.vsStly)}">${fmt(s.vsStly,'pct')}</div></div>
+        <div class="kpi"><div class="kpi-label">NPS</div><div class="kpi-value">${s.nps > 0 ? s.nps.toFixed(0) : '-'}</div></div>
+        <div class="kpi"><div class="kpi-label">Glitches</div><div class="kpi-value">${s.glitchCount}</div></div>
+      </div>
+    </a>`;
+  });
+  document.getElementById('property-grid').innerHTML = cardsHtml;
+
+  // === PORTFOLIO REVENUE TAB ===
+  document.getElementById('port-rev-stats').innerHTML =
+    `<div class="stat-card"><div class="label">Portfolio Revenue</div><div class="value">${fmt(totalPortRev,'money')}</div></div>` +
+    `<div class="stat-card"><div class="label">Portfolio Rooms</div><div class="value">${fmt(totalPortRooms,'int')}</div></div>` +
+    `<div class="stat-card"><div class="label">vs Budget</div><div class="value ${portVsBud>=0?'positive':'negative'}">${fmt(portVsBud,'pct')}</div></div>` +
+    `<div class="stat-card"><div class="label">vs STLY</div><div class="value ${portVsStly>=0?'positive':'negative'}">${fmt(portVsStly,'pct')}</div></div>`;
+
+  // Revenue chart — stacked by property
+  const allMonths = [...new Set(PORTFOLIO_ORDER.flatMap(pid => (summaries[pid]?.monthly||[]).map(m=>m.month)))].sort();
+  const revDatasets = PORTFOLIO_ORDER.map(pid => ({
+    label: PROPERTIES[pid].shortName,
+    data: allMonths.map(mo => { const m = summaries[pid]?.monthly?.find(x=>x.month===mo); return m ? m.rev : 0; }),
+    backgroundColor: propColors[pid] || '#999'
+  }));
+  const ctxRev = document.getElementById('portRevChart').getContext('2d');
+  makeChart(ctxRev, { type: 'bar', data: { labels: allMonths, datasets: revDatasets },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } },
+      scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: v=>'$'+(v/1e6).toFixed(1)+'M' } } } }
+  });
+
+  // ADR chart
+  const adrDatasets = PORTFOLIO_ORDER.map(pid => ({
+    label: PROPERTIES[pid].shortName,
+    data: allMonths.map(mo => { const m = summaries[pid]?.monthly?.find(x=>x.month===mo); return m ? m.adr : 0; }),
+    borderColor: propColors[pid], backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3
+  }));
+  const ctxAdr = document.getElementById('portAdrChart').getContext('2d');
+  makeChart(ctxAdr, { type: 'line', data: { labels: allMonths, datasets: adrDatasets },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v=>'$'+v.toFixed(0) } } } }
+  });
+
+  // Budget comparison
+  const budgetDatasets = [
+    { label: 'Actual', data: PORTFOLIO_ORDER.map(pid => summaries[pid]?.totalRev||0), backgroundColor: 'rgba(200,169,81,0.7)', borderRadius: 6 },
+    { label: 'Budget', data: PORTFOLIO_ORDER.map(pid => summaries[pid]?.totalBud||0), backgroundColor: 'rgba(88,166,255,0.4)', borderRadius: 6 },
+    { label: 'STLY', data: PORTFOLIO_ORDER.map(pid => summaries[pid]?.totalStly||0), backgroundColor: 'rgba(139,148,158,0.3)', borderRadius: 6 }
+  ];
+  const ctxBud = document.getElementById('portBudgetChart').getContext('2d');
+  makeChart(ctxBud, { type: 'bar', data: { labels: PORTFOLIO_ORDER.map(pid=>PROPERTIES[pid].shortName), datasets: budgetDatasets },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v=>'$'+(v/1e6).toFixed(1)+'M' } } } }
+  });
+
+  // Revenue table
+  const revRows = PORTFOLIO_ORDER.map(pid => {
+    const s = summaries[pid]; if(!s) return [];
+    return [PROPERTIES[pid].shortName, fmt(s.totalRooms,'int'), `$${s.avgAdr.toFixed(0)}`, fmt(s.totalRev,'money'),
+      fmt(s.totalBud,'money'), `<span class="${pctClass(s.vsBud)}">${fmt(s.vsBud,'pct')}</span>`,
+      fmt(s.totalStly,'money'), `<span class="${pctClass(s.vsStly)}">${fmt(s.vsStly,'pct')}</span>`];
+  });
+  document.getElementById('port-rev-table').innerHTML = makeTable(
+    ['Property','Rooms','ADR','Revenue','Budget','vs Budget','STLY','vs STLY'],
+    revRows, {align:['','text-right','text-right','text-right','text-right','text-center','text-right','text-center']}
+  );
+
+  // === PORTFOLIO REVIEWS TAB ===
+  const reviewData = {};
+  PORTFOLIO_ORDER.forEach(pid => {
+    const d = allData[pid]; if(!d) return;
+    const src = d.reviews_by_source?.rows || [];
+    const total = src.reduce((s,r)=>s+parseInt(parseFloat(r[1])||0),0);
+    const avg = total > 0 ? src.reduce((s,r)=>s+(parseFloat(r[2])||0)*(parseFloat(r[1])||0),0)/total : 0;
+    const subs = {};
+    ['Cleanliness','Service','Rooms','Value','Location'].forEach((lbl,i) => {
+      let sum=0, cnt=0;
+      src.forEach(r => { const v=parseFloat(r[3+i]); if(!isNaN(v)){sum+=v*(parseFloat(r[1])||1); cnt+=parseFloat(r[1])||1;} });
+      subs[lbl] = cnt>0 ? sum/cnt : 0;
+    });
+    const neg = d.negative_reviews?.rows?.length || 0;
+    const responded = src.reduce((s,r)=>s+parseInt(parseFloat(r[8])||0),0);
+    const respRate = total > 0 ? responded/total*100 : 0;
+    reviewData[pid] = { total, avg, subs, neg, respRate };
+  });
+
+  document.getElementById('port-review-stats').innerHTML = PORTFOLIO_ORDER.map(pid => {
+    const r = reviewData[pid]; if(!r) return '';
+    return `<div class="stat-card"><div class="label">${PROPERTIES[pid].shortName}</div><div class="value">${r.avg.toFixed(2)}</div><div class="sub">${r.total} reviews | ${r.neg} negative</div></div>`;
+  }).join('');
+
+  // Radar
+  const radarLabels = ['Cleanliness','Service','Rooms','Value','Location'];
+  const radarDatasets = PORTFOLIO_ORDER.map(pid => {
+    const r = reviewData[pid]; if(!r) return null;
+    return { label: PROPERTIES[pid].shortName, data: radarLabels.map(l=>r.subs[l]||0),
+      backgroundColor: 'transparent', borderColor: propColors[pid], borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: propColors[pid] };
+  }).filter(Boolean);
+  const ctxRadar = document.getElementById('portReviewRadar').getContext('2d');
+  makeChart(ctxRadar, { type: 'radar', data: { labels: radarLabels, datasets: radarDatasets },
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 3.5, max: 5, ticks: { stepSize: 0.25 } } } }
+  });
+
+  // Review table
+  document.getElementById('port-review-table').innerHTML = makeTable(
+    ['Property','Reviews','Overall','Cleanliness','Service','Rooms','Value','Location','Response Rate','Negative'],
+    PORTFOLIO_ORDER.map(pid => {
+      const r = reviewData[pid]; if(!r) return [];
+      return [PROPERTIES[pid].shortName, r.total, r.avg.toFixed(2),
+        ...radarLabels.map(l=>(r.subs[l]||0).toFixed(2)),
+        `${r.respRate.toFixed(0)}%`, r.neg];
+    }),
+    {align:['','text-right','text-right','text-right','text-right','text-right','text-right','text-right','text-right','text-right']}
+  );
+
+  // === PORTFOLIO OPS TAB ===
+  const opsData = {};
+  PORTFOLIO_ORDER.forEach(pid => {
+    const d = allData[pid]; if(!d) return;
+    const glitches = d.glitch_reports?.rows?.length || 0;
+    const sv = d.survey_overall?.rows?.[0] || [];
+    const chanPerf = d.channel_performance?.rows || [];
+    const totalChanRev = chanPerf.reduce((s,r)=>s+(parseFloat(r[3])||0),0);
+    const channels = {};
+    chanPerf.forEach(r => { channels[r[0]] = { rooms: parseFloat(r[1])||0, rev: parseFloat(r[3])||0, pct: totalChanRev>0?(parseFloat(r[3])||0)/totalChanRev*100:0 }; });
+    opsData[pid] = { glitches, surveyRating: parseFloat(sv[1])||0, nps: parseFloat(sv[2])||0, surveys: parseFloat(sv[0])||0, channels, totalChanRev };
+  });
+
+  document.getElementById('port-ops-stats').innerHTML = PORTFOLIO_ORDER.map(pid => {
+    const o = opsData[pid]; if(!o) return '';
+    return `<div class="stat-card"><div class="label">${PROPERTIES[pid].shortName}</div><div class="value">${o.surveyRating.toFixed(2)}</div><div class="sub">NPS: ${o.nps.toFixed(0)} | ${o.glitches} glitches | ${o.surveys.toFixed(0)} surveys</div></div>`;
+  }).join('');
+
+  // Glitch chart
+  const ctxGlitch = document.getElementById('portGlitchChart').getContext('2d');
+  makeChart(ctxGlitch, { type: 'bar', data: {
+    labels: PORTFOLIO_ORDER.map(pid=>PROPERTIES[pid].shortName),
+    datasets: [{ label: 'Glitch Reports', data: PORTFOLIO_ORDER.map(pid=>opsData[pid]?.glitches||0), backgroundColor: PORTFOLIO_ORDER.map(pid=>propColors[pid]), borderRadius: 6 }]
+  }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+
+  // Survey chart
+  const ctxSurvey = document.getElementById('portSurveyChart').getContext('2d');
+  makeChart(ctxSurvey, { type: 'bar', data: {
+    labels: PORTFOLIO_ORDER.map(pid=>PROPERTIES[pid].shortName),
+    datasets: [
+      { label: 'Survey Rating', data: PORTFOLIO_ORDER.map(pid=>opsData[pid]?.surveyRating||0), backgroundColor: PORTFOLIO_ORDER.map(pid=>propColors[pid]), borderRadius: 6 },
+      { label: 'NPS', data: PORTFOLIO_ORDER.map(pid=>opsData[pid]?.nps||0), backgroundColor: PORTFOLIO_ORDER.map(pid=>propColors[pid]+'60'), borderRadius: 6, yAxisID: 'nps' }
+    ]
+  }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 3, max: 5 }, nps: { position: 'right', grid: { display: false } } } } });
+
+  // Channel table
+  const channelKeys = ['LRA','NLRA','OTA','BAR','CONS'];
+  const channelLabels = {LRA:'Design Hotels (LRA)',NLRA:'Non-Loyalty (NLRA)',OTA:'OTA',BAR:'Direct (BAR)',CONS:'Consortia'};
+  const chanRows = channelKeys.map(ck => {
+    const row = [channelLabels[ck]||ck];
+    PORTFOLIO_ORDER.forEach(pid => {
+      const ch = opsData[pid]?.channels?.[ck];
+      row.push(ch ? fmt(ch.rev,'money') : '-');
+      row.push(ch ? `${ch.pct.toFixed(1)}%` : '-');
+    });
+    return row;
+  });
+  const chanHeaders = ['Channel'];
+  PORTFOLIO_ORDER.forEach(pid => { chanHeaders.push(PROPERTIES[pid].code+' Rev', PROPERTIES[pid].code+' %'); });
+  document.getElementById('port-channel-table').innerHTML = makeTable(chanHeaders, chanRows,
+    {align:['', ...PORTFOLIO_ORDER.flatMap(()=>['text-right','text-right'])]}
+  );
+}
+
+// Load all property data
+async function init() {
+  const loads = PORTFOLIO_ORDER.map(async pid => {
+    const cfg = PROPERTIES[pid];
+    const resp = await fetch(cfg.dataFile);
+    allData[pid] = await resp.json();
+  });
+  await Promise.all(loads);
+  renderPortfolio();
+}
+
+init();
+</script>
+</body>
+</html>

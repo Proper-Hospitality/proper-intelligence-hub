@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Intelligence Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root {
+  --bg: #0D1117;
+  --bg-card: #161B22;
+  --bg-card-hover: #1C2230;
+  --bg-surface: #21262D;
+  --gold: #C8A951;
+  --gold-dim: rgba(200,169,81,0.15);
+  --gold-glow: rgba(200,169,81,0.3);
+  --warm: #E8D5B7;
+  --cream: #F5F0E8;
+  --green: #3FB950;
+  --green-dim: rgba(63,185,80,0.15);
+  --red: #F85149;
+  --red-dim: rgba(248,81,73,0.15);
+  --orange: #D29922;
+  --teal: #58A6FF;
+  --light-teal: #79C0FF;
+  --border: rgba(200,169,81,0.12);
+  --border-subtle: rgba(255,255,255,0.06);
+  --text: #E6EDF3;
+  --text-secondary: #8B949E;
+  --text-dim: #484F58;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-weight: 400; }
+
+.nav { background: linear-gradient(180deg, #1A1F2B 0%, #0D1117 100%); padding: 0 2rem; display: flex; align-items: center; height: 64px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
+.nav h1 { color: var(--cream); font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.3rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; }
+.nav h1 span { color: var(--gold); }
+.nav-tabs { display: flex; margin-left: 2.5rem; gap: 0; height: 100%; }
+.nav-tab { color: var(--text-secondary); padding: 0 1rem; cursor: pointer; display: flex; align-items: center; font-size: 0.8rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.25s ease; letter-spacing: 0.3px; }
+.nav-tab:hover { color: var(--cream); background: rgba(200,169,81,0.05); }
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 1rem; color: var(--text-dim); font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase; }
+.back-link { color: var(--text-secondary); text-decoration: none; font-size: 0.75rem; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; transition: all 0.2s; }
+.back-link:hover { color: var(--gold); border-color: var(--gold-glow); }
+
+.page { display: none; padding: 1.5rem 2rem; max-width: 1600px; margin: 0 auto; }
+.page.active { display: block; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card { background: var(--bg-card); border-radius: 12px; padding: 1.2rem 1.5rem; border: 1px solid var(--border); transition: border-color 0.3s ease; }
+.stat-card:hover { border-color: var(--gold-glow); box-shadow: 0 0 20px rgba(200,169,81,0.08); }
+.stat-card .label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; font-weight: 500; }
+.stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--cream); }
+.stat-card .value.green { color: var(--green); }
+.stat-card .value.red { color: var(--red); }
+.stat-card .sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.3rem; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.full-width { margin-bottom: 1.5rem; }
+
+.card { background: var(--bg-card); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border-subtle); }
+.card h2 { font-size: 0.85rem; font-weight: 600; color: var(--gold); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.8px; font-family: 'Inter', sans-serif; }
+.card h3 { font-size: 0.8rem; font-weight: 500; color: var(--warm); margin: 1rem 0 0.5rem; letter-spacing: 0.3px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+th { background: var(--bg-surface); color: var(--gold); padding: 0.6rem 0.8rem; text-align: left; font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.8px; position: sticky; top: 0; border-bottom: 1px solid var(--border); }
+td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border-subtle); color: var(--text); }
+tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+tr:hover { background: rgba(200,169,81,0.05); }
+tr.highlight { background: var(--gold-dim) !important; font-weight: 600; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.positive { color: var(--green); font-weight: 600; }
+.negative { color: var(--red); font-weight: 600; }
+
+.comment { background: var(--bg-surface); border-left: 2px solid var(--gold); padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; border-radius: 0 6px 6px 0; font-size: 0.78rem; color: var(--text-secondary); font-style: italic; }
+
+.rating-row { display: flex; align-items: center; margin-bottom: 0.5rem; }
+.rating-label { width: 120px; font-size: 0.78rem; color: var(--text-secondary); }
+.rating-bar-bg { flex: 1; height: 24px; background: var(--bg-surface); border-radius: 12px; overflow: hidden; margin: 0 0.8rem; }
+.rating-bar { height: 100%; border-radius: 12px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 0.7rem; color: var(--bg); font-weight: 600; transition: width 0.8s ease; background: linear-gradient(90deg, var(--gold), var(--warm)); }
+.rating-val { width: 40px; font-size: 0.85rem; font-weight: 600; text-align: right; color: var(--cream); }
+
+.chart-container { position: relative; height: 300px; }
+
+.badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+.badge-green { background: var(--green-dim); color: var(--green); }
+.badge-red { background: var(--red-dim); color: var(--red); }
+.badge-gold { background: var(--gold-dim); color: var(--gold); }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 3px; }
+select { background: var(--bg-surface) !important; color: var(--gold) !important; border: 1px solid var(--border) !important; }
+
+@media (max-width: 1024px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <h1 id="nav-title" onclick="window.location='index.html'"></h1>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('revenue',this)">Revenue</div>
+    <div class="nav-tab" onclick="showPage('reviews',this)">Reviews</div>
+    <div class="nav-tab" onclick="showPage('surveys',this)">Guest Surveys</div>
+    <div class="nav-tab" onclick="showPage('sales',this)">Group Sales</div>
+    <div class="nav-tab" onclick="showPage('compset',this)">Comp Set</div>
+    <div class="nav-tab" onclick="showPage('glitches',this)">Glitch Reports</div>
+    <div class="nav-tab" onclick="showPage('fnb',this)">F&B Deep Dive</div>
+    <div class="nav-tab" onclick="showPage('channels',this)">Channels</div>
+    <div class="nav-tab" onclick="showPage('pace',this)">Pace & Pickup</div>
+  </div>
+  <div class="nav-right">
+    <a href="index.html" class="back-link">&larr; Portfolio</a>
+    <select id="dateFilter" onchange="setDateFilter(this.value)">
+      <option value="ytd">YTD (2026)</option>
+      <option value="q1">Q1 2026</option>
+      <option value="thisMonth">This Month</option>
+      <option value="trailing3">Trailing 3 Months</option>
+      <option value="all" selected>All Data</option>
+    </select>
+    <span>Live from Snowflake</span>
+  </div>
+</div>
+
+<!-- 1. REVENUE -->
+<div id="revenue" class="page active">
+  <div class="stats" id="revenue-stats"></div>
+  <div class="full-width"><div class="card"><h2>Monthly Revenue — Actual vs Budget vs STLY</h2><div class="chart-container"><canvas id="revChart"></canvas></div></div></div>
+  <div class="grid-2">
+    <div class="card"><h2>Revenue by Market Segment</h2><div id="segment-table" style="max-height:500px;overflow-y:auto;"></div></div>
+    <div class="card"><h2>Portfolio Comparison — All Properties</h2><div id="portfolio-table" style="max-height:500px;overflow-y:auto;"></div></div>
+  </div>
+</div>
+
+<!-- 2. REVIEWS -->
+<div id="reviews" class="page">
+  <div class="stats" id="review-stats"></div>
+  <div class="grid-2">
+    <div class="card"><h2>Ratings by Platform</h2><div id="review-source-table"></div></div>
+    <div class="card"><h2>Sub-Rating Breakdown</h2><div class="chart-container"><canvas id="subRatingChart"></canvas></div></div>
+  </div>
+  <div class="full-width"><div class="card"><h2>Negative Reviews (Rating &le; 3)</h2><div id="negative-reviews" style="max-height:400px;overflow-y:auto;"></div></div></div>
+</div>
+
+<!-- 3. SURVEYS -->
+<div id="surveys" class="page">
+  <div class="stats" id="survey-stats"></div>
+  <div id="survey-outlets"></div>
+  <div class="grid-2">
+    <div class="card"><h2>Top Guest Issues — "What Could Be Better?"</h2><div class="chart-container"><canvas id="issuesChart"></canvas></div></div>
+    <div class="card"><h2>Satisfaction by Booking Channel</h2><div id="survey-channel-table"></div></div>
+  </div>
+</div>
+
+<!-- 4. GROUP SALES -->
+<div id="sales" class="page">
+  <div class="stats" id="sales-stats"></div>
+  <div class="grid-2">
+    <div class="card"><h2>Pipeline by Status</h2><div id="status-table"></div></div>
+    <div class="card"><h2>Revenue by Sales Rep</h2><div id="owner-table" style="max-height:400px;overflow-y:auto;"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><h2>Monthly Booking Trend</h2><div class="chart-container"><canvas id="bookingTrendChart"></canvas></div></div>
+    <div class="card"><h2>Event Market Segments (Tripleseat)</h2><div id="tripleseat-table"></div></div>
+  </div>
+</div>
+
+<!-- 5. COMP SET -->
+<div id="compset" class="page">
+  <div class="stats" id="comp-stats"></div>
+  <div class="full-width"><div class="card"><h2 id="comp-title">vs Competitors — Review Ratings</h2><div id="comp-table"></div></div></div>
+  <div class="full-width"><div class="card"><h2>Rating Comparison — Visual</h2><div class="chart-container" style="height:400px"><canvas id="compChart"></canvas></div></div></div>
+</div>
+
+<!-- 6. GLITCHES -->
+<div id="glitches" class="page">
+  <div class="stats" id="glitch-stats"></div>
+  <div class="grid-2">
+    <div class="card"><h2>Incidents by Issue Type</h2><div class="chart-container"><canvas id="glitchIssueChart"></canvas></div></div>
+    <div class="card"><h2>Repeat Problem Rooms</h2><div id="glitch-rooms" style="max-height:350px;overflow-y:auto;"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><h2>Status Breakdown</h2><div id="glitch-status-table"></div><h3 style="margin-top:1rem">Compensation Given</h3><div id="glitch-comp-table"></div></div>
+    <div class="card"><h2>Incident Type Distribution</h2><div id="glitch-type-table"></div><h3 style="margin-top:1rem">Monthly Trend</h3><div class="chart-container" style="height:200px"><canvas id="glitchTrendChart"></canvas></div></div>
+  </div>
+  <div class="full-width"><div class="card"><h2>Recent Incidents</h2><div id="glitch-detail-table" style="max-height:500px;overflow-y:auto;"></div></div></div>
+</div>
+
+<!-- 7. F&B DEEP DIVE -->
+<div id="fnb" class="page">
+  <div class="stats" id="fnb-stats"></div>
+  <div class="full-width"><div class="card"><h2>Outlet Performance Comparison — Guest Survey Ratings</h2><div class="chart-container" style="height:350px"><canvas id="fnbRadarChart"></canvas></div></div></div>
+  <div id="fnb-outlet-cards"></div>
+  <div class="grid-2">
+    <div class="card"><h2>Event/Banquet Revenue Trend (Tripleseat)</h2><div class="chart-container"><canvas id="fnbEventChart"></canvas></div></div>
+    <div class="card"><h2>F&B Incidents — Glitch Reports</h2><div id="fnb-glitch-table" style="max-height:350px;overflow-y:auto;"></div></div>
+  </div>
+  <div class="full-width"><div class="card"><h2>F&B Mentions in Guest Reviews</h2><div id="fnb-review-table" style="max-height:400px;overflow-y:auto;"></div></div></div>
+</div>
+
+<!-- 8. CHANNELS -->
+<div id="channels" class="page">
+  <div class="stats" id="channel-stats"></div>
+  <div class="full-width"><div class="card"><h2>Channel Revenue Mix — Monthly</h2><div class="chart-container" style="height:350px"><canvas id="channelStackChart"></canvas></div></div></div>
+  <div class="grid-2">
+    <div class="card"><h2>Channel Performance Summary</h2><div id="channel-perf-table" style="max-height:500px;overflow-y:auto;"></div></div>
+    <div class="card"><h2>Design Hotels / Bonvoy (LRA + NLRA)</h2><div id="lra-table" style="max-height:300px;overflow-y:auto;"></div><h3 style="margin-top:1rem">LRA vs NLRA Monthly Revenue</h3><div class="chart-container" style="height:200px"><canvas id="lraChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- 9. PACE & PICKUP -->
+<div id="pace" class="page">
+  <div class="stats" id="pace-stats"></div>
+  <div class="full-width"><div class="card"><h2>7-Day Pickup — Revenue vs STLY</h2><div class="chart-container" style="height:350px"><canvas id="pickupChart"></canvas></div></div></div>
+  <div class="grid-2">
+    <div class="card"><h2>Monthly Pace — On the Books vs Budget vs Forecast</h2><div id="pace-table" style="max-height:500px;overflow-y:auto;"></div></div>
+    <div class="card"><h2>7-Day Pickup by Segment</h2><div id="pickup-segment-table" style="max-height:500px;overflow-y:auto;"></div></div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const propertyId = params.get('property') || 'smp';
+const CFG = PROPERTIES[propertyId];
+
+if (!CFG) { document.body.innerHTML = '<p style="color:#F85149;padding:2rem;">Unknown property: '+propertyId+'</p>'; }
+
+// Set nav title
+document.getElementById('nav-title').innerHTML = `${CFG.navTitle[0]} <span>${CFG.navTitle[1]}</span>`;
+document.title = CFG.shortName + ' — Intelligence Dashboard';
+
+let D = {};
+let currentFilter = 'all';
+let chartInstances = [];
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+function setDateFilter(val) { currentFilter = val; destroyCharts(); render(); }
+function destroyCharts() { chartInstances.forEach(c => c.destroy()); chartInstances = []; }
+function makeChart(ctx, config) { const c = new Chart(ctx, config); chartInstances.push(c); return c; }
+
+function filterMonths(months) {
+  if (currentFilter === 'all') return months;
+  const now = '2026-03';
+  return months.filter(m => {
+    const k = m[0];
+    if (currentFilter === 'ytd') return k >= '2026-01' && k <= now;
+    if (currentFilter === 'q1') return k >= '2026-01' && k <= '2026-03';
+    if (currentFilter === 'thisMonth') return k === now;
+    if (currentFilter === 'trailing3') return k >= '2026-01' && k <= now;
+    return true;
+  });
+}
+
+function fmt(v, type='num') {
+  if (v === null || v === undefined || v === 'None' || v === '') return '-';
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  if (type === 'money') return n >= 1e6 ? `$${(n/1e6).toFixed(1)}M` : n >= 1000 ? `$${n.toLocaleString('en-US', {maximumFractionDigits:0})}` : `$${n.toFixed(2)}`;
+  if (type === 'pct') return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
+  if (type === 'rating') return n.toFixed(2);
+  if (type === 'int') return Math.round(n).toLocaleString();
+  return n.toFixed(1);
+}
+
+function pctClass(v) { const n = parseFloat(v); return isNaN(n) ? '' : n >= 0 ? 'positive' : 'negative'; }
+
+function makeTable(headers, rows, opts={}) {
+  let html = '<table><thead><tr>';
+  headers.forEach((h,i) => html += `<th class="${opts.align?.[i]||''}">${h}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach((r,idx) => {
+    const cls = opts.highlightFirst && idx === 0 ? ' class="highlight"' : '';
+    html += `<tr${cls}>`;
+    r.forEach((c,i) => html += `<td class="${opts.align?.[i]||''}">${c}</td>`);
+    html += '</tr>';
+  });
+  return html + '</tbody></table>';
+}
+
+function ratingBar(label, value, max=5) {
+  const v = parseFloat(value);
+  if (isNaN(v)) return '';
+  const pct = (v / max * 100).toFixed(0);
+  return `<div class="rating-row"><span class="rating-label">${label}</span><div class="rating-bar-bg"><div class="rating-bar" style="width:${pct}%">${v.toFixed(1)}</div></div><span class="rating-val">${v.toFixed(2)}</span></div>`;
+}
+
+function statCard(label, value, sub='', colorClass='') {
+  return `<div class="stat-card"><div class="label">${label}</div><div class="value ${colorClass}">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+}
+
+Chart.defaults.color = '#8B949E';
+Chart.defaults.borderColor = 'rgba(200,169,81,0.1)';
+Chart.defaults.plugins.legend.labels.color = '#8B949E';
+Chart.defaults.plugins.legend.labels.font = { size: 11, family: 'Inter' };
+Chart.defaults.scale.grid = { color: 'rgba(255,255,255,0.04)' };
+
+const segmentLabels = {LRA:'LRA (Design Hotels)',NLRA:'NLRA (Non-Loyalty)',OTA:'OTA',BAR:'BAR (Direct)',CONS:'Consortia',FDISC:'Friends/Family Disc',QDISC:'Qualified Disc',INDISC:'Industry Disc',PKG:'Packages',FIT:'FIT',RDEEM:'Redemptions',GOVT:'Government'};
+
+function render() {
+  // === 1. REVENUE ===
+  const revRaw = D.revenue_monthly?.rows || [];
+  const monthMap = {};
+  revRaw.forEach(r => {
+    const d = r[0];
+    const key = d.length === 8 ? d.slice(0,4)+'-'+d.slice(4,6) : d.length === 10 ? d.slice(0,7) : d;
+    if (!monthMap[key]) monthMap[key] = {rooms:0,rev:0,budRooms:0,budRev:0,stlyRooms:0,stlyRev:0,fcstRooms:0,fcstRev:0};
+    const m = monthMap[key];
+    m.rooms += parseFloat(r[1])||0; m.rev += parseFloat(r[3])||0;
+    m.budRooms += parseFloat(r[4])||0; m.budRev += parseFloat(r[6])||0;
+    m.stlyRooms += parseFloat(r[7])||0; m.stlyRev += parseFloat(r[9])||0;
+    m.fcstRooms += parseFloat(r[10])||0; m.fcstRev += parseFloat(r[12])||0;
+  });
+  const rev = Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,m]) => [
+    k, String(m.rooms), String(m.rooms>0?m.rev/m.rooms:0), String(m.rev),
+    String(m.budRooms), String(m.budRooms>0?m.budRev/m.budRooms:0), String(m.budRev),
+    String(m.stlyRooms), String(m.stlyRooms>0?m.stlyRev/m.stlyRooms:0), String(m.stlyRev),
+    String(m.fcstRooms), String(m.fcstRooms>0?m.fcstRev/m.fcstRooms:0), String(m.fcstRev)
+  ]);
+  const filtered = filterMonths(rev);
+  const r12 = filtered.length > 0 ? filtered : rev.slice(-12);
+  const totalRev = r12.reduce((s,r) => s + (parseFloat(r[3])||0), 0);
+  const totalBud = r12.reduce((s,r) => s + (parseFloat(r[6])||0), 0);
+  const totalStly = r12.reduce((s,r) => s + (parseFloat(r[9])||0), 0);
+  const totalRooms = r12.reduce((s,r) => s + (parseFloat(r[1])||0), 0);
+  const avgAdr = totalRooms > 0 ? totalRev / totalRooms : 0;
+  const vsBud = totalBud > 0 ? (totalRev-totalBud)/totalBud*100 : 0;
+  const vsStly = totalStly > 0 ? (totalRev-totalStly)/totalStly*100 : 0;
+
+  document.getElementById('revenue-stats').innerHTML =
+    statCard('Room Revenue', fmt(totalRev,'money')) +
+    statCard('Average ADR', `$${avgAdr.toFixed(0)}`) +
+    statCard('Rooms Sold', fmt(totalRooms,'int')) +
+    statCard('vs Budget', fmt(vsBud,'pct'), '', vsBud>=0?'green':'red') +
+    statCard('vs STLY', fmt(vsStly,'pct'), '', vsStly>=0?'green':'red');
+
+  makeChart(document.getElementById('revChart').getContext('2d'), {
+    type: 'bar', data: {
+      labels: r12.map(r => r[0]),
+      datasets: [
+        { label: 'Actual Revenue', data: r12.map(r => parseFloat(r[3])||0), backgroundColor: 'rgba(200,169,81,0.7)', borderRadius: 4 },
+        { label: 'Budget', data: r12.map(r => parseFloat(r[6])||0), backgroundColor: 'rgba(88,166,255,0.3)', borderRadius: 4 },
+        { label: 'STLY', data: r12.map(r => parseFloat(r[9])||0), backgroundColor: 'rgba(139,148,158,0.2)', borderRadius: 4 },
+        { label: 'ADR', data: r12.map(r => parseFloat(r[2])||0), type: 'line', borderColor: '#F85149', backgroundColor: 'transparent', yAxisID: 'adr', pointRadius: 4, borderWidth: 2 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } },
+      scales: { y: { ticks: { callback: v => '$'+(v/1e6).toFixed(1)+'M' }}, adr: { position: 'right', ticks: { callback: v => '$'+v }, grid: { display: false }}} }
+  });
+
+  const seg = D.revenue_by_segment?.rows || [];
+  document.getElementById('segment-table').innerHTML = makeTable(
+    ['Segment','Rooms','ADR','Revenue','STLY Rooms','STLY Revenue'],
+    seg.map(r => [r[0], fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[3],'money'), fmt(r[4],'int'), fmt(r[5],'money')]),
+    {align:['','text-right','text-right','text-right','text-right','text-right']}
+  );
+
+  const port = D.portfolio_comparison?.rows || [];
+  document.getElementById('portfolio-table').innerHTML = makeTable(
+    ['Hotel','Rooms','ADR','Revenue','vs Budget','vs STLY'],
+    port.map(r => [r[0], fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[3],'money'),
+      `<span class="${pctClass(r[5])}">${fmt(r[5],'pct')}</span>`,
+      `<span class="${pctClass(r[7])}">${fmt(r[7],'pct')}</span>`]),
+    {align:['','text-right','text-right','text-right','text-center','text-center'], highlightFirst: false}
+  );
+
+  // === 2. REVIEWS ===
+  const revSrc = D.reviews_by_source?.rows || [];
+  const totalReviews = revSrc.reduce((s,r)=>s+parseInt(parseFloat(r[1])||0),0);
+  const wAvgRating = totalReviews > 0 ? revSrc.reduce((s,r)=>s+(parseFloat(r[2])||0)*(parseFloat(r[1])||0),0)/totalReviews : 0;
+  const totalResponded = revSrc.reduce((s,r)=>s+parseInt(parseFloat(r[8])||0),0);
+  const respRate = totalReviews > 0 ? totalResponded/totalReviews*100 : 0;
+  const negCount = D.negative_reviews?.rows?.length || 0;
+
+  document.getElementById('review-stats').innerHTML =
+    statCard('Total Reviews', totalReviews) +
+    statCard('Avg Rating', wAvgRating.toFixed(2)) +
+    statCard('Response Rate', respRate.toFixed(0)+'%', '', respRate>80?'green':'red') +
+    statCard('Negative (\u22643)', negCount, '', negCount>10?'red':'green');
+
+  document.getElementById('review-source-table').innerHTML = makeTable(
+    ['Source','Reviews','Overall','Clean','Service','Rooms','Value','Location','Responded'],
+    revSrc.map(r => [r[0], fmt(r[1],'int'), fmt(r[2],'rating'), fmt(r[3],'rating'), fmt(r[4],'rating'), fmt(r[5],'rating'), fmt(r[6],'rating'), fmt(r[7],'rating'), fmt(r[8],'int')]),
+    {align:['','text-right','text-right','text-right','text-right','text-right','text-right','text-right','text-right']}
+  );
+
+  const avgSubs = {};
+  ['Cleanliness','Service','Rooms','Value','Location'].forEach((lbl,i) => {
+    let sum=0, cnt=0;
+    revSrc.forEach(r => { const v=parseFloat(r[3+i]); if(!isNaN(v)){sum+=v*(parseFloat(r[1])||1); cnt+=parseFloat(r[1])||1;} });
+    avgSubs[lbl] = cnt>0 ? sum/cnt : 0;
+  });
+  makeChart(document.getElementById('subRatingChart').getContext('2d'), {
+    type: 'radar',
+    data: { labels: Object.keys(avgSubs), datasets: [{ label: CFG.radarLabel, data: Object.values(avgSubs), backgroundColor: 'rgba(200,169,81,0.1)', borderColor: '#C8A951', pointBackgroundColor: '#C8A951', borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } } }
+  });
+
+  const neg = D.negative_reviews?.rows || [];
+  let negHtml = '<table><thead><tr><th>Source</th><th>Date</th><th>Rating</th><th>Title</th><th>Excerpt</th><th>Responded?</th></tr></thead><tbody>';
+  neg.forEach(r => {
+    negHtml += `<tr><td>${r[0]||'-'}</td><td>${(r[1]||'').slice(0,10)}</td><td><span class="badge badge-red">${r[2]}</span></td><td>${r[3]&&r[3]!='None'?r[3]:'-'}</td><td style="max-width:400px;font-size:0.75rem">${(r[4]||'').slice(0,200)}...</td><td>${r[5]==='true'?'<span class="badge badge-green">Yes</span>':'<span class="badge badge-red">No</span>'}</td></tr>`;
+  });
+  document.getElementById('negative-reviews').innerHTML = negHtml + '</tbody></table>';
+
+  // === 3. SURVEYS (dynamically built from config) ===
+  const sv = D.survey_overall?.rows?.[0] || [];
+  document.getElementById('survey-stats').innerHTML =
+    statCard('Total Surveys', fmt(sv[0],'int')) +
+    statCard('Avg Overall Rating', fmt(sv[1],'rating')) +
+    statCard('Avg NPS', fmt(sv[2],'int')) +
+    statCard('Arrival Experience', fmt(sv[5],'rating')) +
+    statCard('Service Rating', fmt(sv[7],'rating'));
+
+  // Dynamic survey outlet cards
+  let surveyHtml = '<div class="grid-3">';
+  CFG.outlets.survey.forEach(outlet => {
+    const data = D[outlet.key]?.rows?.[0] || [];
+    const comments = D[outlet.commentsKey]?.rows || [];
+    surveyHtml += `<div class="card"><h2>${outlet.label} Ratings</h2>`;
+    surveyHtml += `<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.8rem">${fmt(data[0],'int')} survey visits</p>`;
+    outlet.fields.forEach((f,i) => { surveyHtml += ratingBar(f, data[1+i]); });
+    if (comments.length) {
+      surveyHtml += '<h3>Guest Comments</h3>';
+      surveyHtml += comments.slice(0,6).map(c => c[0]&&c[0]!='None' ? `<div class="comment">"${c[0].slice(0,150)}"</div>` : '').join('');
+    }
+    if (outlet.secondaryKey) {
+      const sec = D[outlet.secondaryKey]?.rows?.[0] || [];
+      surveyHtml += `<h3 style="margin-top:1.5rem">${outlet.secondaryLabel}</h3>`;
+      surveyHtml += `<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.8rem">${fmt(sec[0],'int')} survey visits</p>`;
+      outlet.secondaryFields.forEach((f,i) => { surveyHtml += ratingBar(f, sec[1+i]); });
+    }
+    surveyHtml += '</div>';
+  });
+  surveyHtml += '</div>';
+  document.getElementById('survey-outlets').innerHTML = surveyHtml;
+
+  const issues = D.survey_issues?.rows || [];
+  makeChart(document.getElementById('issuesChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels: issues.map(r=>r[0]?.slice(0,30)||''), datasets: [{ data: issues.map(r=>parseInt(r[1])||0), backgroundColor: 'rgba(248,81,73,0.6)', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+  });
+
+  const chan = D.survey_by_channel?.rows || [];
+  document.getElementById('survey-channel-table').innerHTML = makeTable(
+    ['Channel','Surveys','Avg Rating','Avg NPS'],
+    chan.map(r => [r[0], fmt(r[1],'int'), fmt(r[2],'rating'), fmt(r[3],'int')]),
+    {align:['','text-right','text-right','text-right']}
+  );
+
+  // === 4. GROUP SALES ===
+  const bk = D.bookings_by_status?.rows || [];
+  const totalBk = bk.reduce((s,r)=>s+parseInt(parseFloat(r[1])||0),0);
+  const totalBkRev = bk.reduce((s,r)=>s+(parseFloat(r[2])||0),0);
+
+  document.getElementById('sales-stats').innerHTML =
+    statCard('Total Bookings', fmt(totalBk,'int')) +
+    statCard('Pipeline Revenue', fmt(totalBkRev,'money')) +
+    statCard('Avg Deal Size', fmt(totalBk>0?totalBkRev/totalBk:0,'money'));
+
+  document.getElementById('status-table').innerHTML = makeTable(
+    ['Status','Bookings','Total Revenue','Avg Revenue','Definite'],
+    bk.map(r => [r[0]||'-', fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[3],'money'), fmt(r[4],'int')]),
+    {align:['','text-right','text-right','text-right','text-right']}
+  );
+
+  const owners = D.bookings_by_owner?.rows || [];
+  document.getElementById('owner-table').innerHTML = makeTable(
+    ['Sales Rep','Bookings','Revenue','Definite','Tentative','Avg Deal'],
+    owners.map(r => [r[0]&&r[0]!='None'?r[0]:'Unassigned', fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[3],'int'), fmt(r[4],'int'), fmt(r[5],'money')]),
+    {align:['','text-right','text-right','text-right','text-right','text-right']}
+  );
+
+  const monthly = D.bookings_monthly?.rows || [];
+  makeChart(document.getElementById('bookingTrendChart').getContext('2d'), {
+    type: 'bar', data: {
+      labels: monthly.map(r => (r[0]||'').slice(0,7)),
+      datasets: [
+        { label: 'Total Revenue', data: monthly.map(r=>parseFloat(r[2])||0), backgroundColor: 'rgba(200,169,81,0.6)', borderRadius: 4 },
+        { label: 'Definite Revenue', data: monthly.map(r=>parseFloat(r[4])||0), backgroundColor: 'rgba(63,185,80,0.5)', borderRadius: 4 },
+        { label: 'Bookings', data: monthly.map(r=>parseInt(r[1])||0), type: 'line', borderColor: '#C8A951', backgroundColor: 'transparent', yAxisID: 'count', pointRadius: 3, borderWidth: 2 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v=>'$'+(v/1e3).toFixed(0)+'K' }}, count: { position: 'right', grid: { display: false } } } }
+  });
+
+  const ts = D.tripleseat_segments?.rows || [];
+  document.getElementById('tripleseat-table').innerHTML = makeTable(
+    ['Segment','Bookings','Revenue','Avg Revenue','Definite'],
+    ts.map(r => [r[0]&&r[0]!='None'?r[0]:'Uncategorized', fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[3],'money'), fmt(r[4],'int')]),
+    {align:['','text-right','text-right','text-right','text-right']}
+  );
+
+  // === 5. COMP SET ===
+  const propAgg = D.property_reviews_aggregate?.rows?.[0] || [];
+  const comp = D.comp_set?.rows || [];
+
+  document.getElementById('comp-title').textContent = CFG.compSetLabel;
+  document.getElementById('comp-stats').innerHTML =
+    statCard(CFG.shortName + ' Overall', fmt(propAgg[2],'rating'), `${fmt(propAgg[1],'int')} reviews`) +
+    statCard('Direct Competitors', comp.length) +
+    statCard('Total Comp Reviews', fmt(comp.reduce((s,r)=>s+parseInt(parseFloat(r[1])||0),0),'int'));
+
+  const compRows = [];
+  if (propAgg.length) compRows.push(['\u2605 ' + CFG.name.toUpperCase(), fmt(propAgg[1],'int'), fmt(propAgg[2],'rating'), fmt(propAgg[3],'rating'), fmt(propAgg[4],'rating'), fmt(propAgg[5],'rating'), fmt(propAgg[6],'rating')]);
+  comp.forEach(r => compRows.push([r[0], fmt(r[1],'int'), fmt(r[2],'rating'), fmt(r[3],'rating'), fmt(r[4],'rating'), fmt(r[5],'rating'), fmt(r[6],'rating')]));
+  document.getElementById('comp-table').innerHTML = makeTable(
+    ['Hotel','Reviews','Overall','Cleanliness','Service','Rooms','Value'],
+    compRows, {align:['','text-right','text-right','text-right','text-right','text-right','text-right'], highlightFirst: true}
+  );
+
+  if (propAgg.length && comp.length) {
+    const labels = ['Overall','Cleanliness','Service','Rooms','Value'];
+    const colors = ['#E74C3C','#F39C12','#3498DB','#9B59B6','#E67E22'];
+    const datasets = [{ label: CFG.shortName, data: [propAgg[2],propAgg[3],propAgg[4],propAgg[5],propAgg[6]].map(v=>parseFloat(v)||0), backgroundColor: 'rgba(200,169,81,0.15)', borderColor: '#C8A951', borderWidth: 3, pointRadius: 5 }];
+    comp.forEach((c,i) => {
+      datasets.push({ label: c[0]?.replace(/(,?\s*(CA|Santa Monica|Austin))$/,'').slice(0,25), data: [c[2],c[3],c[4],c[5],c[6]].map(v=>parseFloat(v)||0), backgroundColor: 'transparent', borderColor: colors[i%5], borderWidth: 2, pointRadius: 4, borderDash: [5,5] });
+    });
+    makeChart(document.getElementById('compChart').getContext('2d'), { type: 'radar', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 3, max: 5, ticks: { stepSize: 0.5 } } } } });
+  }
+
+  // === 6. GLITCH REPORTS ===
+  const glitches = D.glitch_reports?.rows || [];
+  const glitchIssues = D.glitch_by_issue?.rows || [];
+  const glitchTypes = D.glitch_by_type?.rows || [];
+  const glitchStatus = D.glitch_by_status?.rows || [];
+  const glitchRooms = D.glitch_by_room?.rows || [];
+  const glitchMonthly = D.glitch_monthly?.rows || [];
+  const glitchComp = D.glitch_compensation?.rows || [];
+
+  const openGlitches = glitchStatus.filter(r => r[0] && r[0].toLowerCase().includes('open')).reduce((s,r)=>s+parseInt(r[1]||0),0);
+  document.getElementById('glitch-stats').innerHTML =
+    statCard('Total Incidents', glitches.length) +
+    statCard('Issue Categories', glitchIssues.length) +
+    statCard('Repeat-Problem Rooms', glitchRooms.length, '2+ incidents') +
+    statCard('Open/Unresolved', openGlitches || '-', '', openGlitches > 5 ? 'red' : 'green');
+
+  if (glitchIssues.length) {
+    makeChart(document.getElementById('glitchIssueChart').getContext('2d'), {
+      type: 'bar', data: { labels: glitchIssues.slice(0,15).map(r=>(r[0]||'').slice(0,35)), datasets: [{ data: glitchIssues.slice(0,15).map(r=>parseInt(r[1])||0), backgroundColor: 'rgba(248,81,73,0.6)', borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+  }
+
+  document.getElementById('glitch-rooms').innerHTML = makeTable(['Room','Incidents','Unique Issues'], glitchRooms.map(r => [r[0], r[1], r[2]]), {align:['','text-center','text-center']});
+  document.getElementById('glitch-status-table').innerHTML = makeTable(['Status','Count'], glitchStatus.map(r=>[r[0]||'Unknown',r[1]]), {align:['','text-right']});
+  document.getElementById('glitch-type-table').innerHTML = makeTable(['Type','Count'], glitchTypes.map(r=>[r[0]||'Unknown',r[1]]), {align:['','text-right']});
+  document.getElementById('glitch-comp-table').innerHTML = makeTable(['Compensation','Count'], glitchComp.map(r=>[r[0],r[1]]), {align:['','text-right']});
+
+  if (glitchMonthly.length) {
+    makeChart(document.getElementById('glitchTrendChart').getContext('2d'), {
+      type: 'line', data: { labels: glitchMonthly.map(r=>r[0]), datasets: [{ label: 'Incidents', data: glitchMonthly.map(r=>parseInt(r[1])||0), borderColor: '#F85149', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.3, pointRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  const glitchDetailRows = glitches.slice(0,50).map(r => [
+    (r[1]||'').slice(0,10), r[2]||'-', r[4]||'-', r[5]||'-',
+    `<span style="font-size:0.7rem">${(r[6]||'').slice(0,120)}</span>`,
+    r[7]&&r[7]!='None'?r[7]:'-',
+    r[8]&&r[8]!='None'?`<span class="badge ${r[8].toLowerCase().includes('yes')||r[8].toLowerCase().includes('satis')?'badge-green':'badge-red'}">${r[8]}</span>`:'-',
+    r[9]||'-'
+  ]);
+  document.getElementById('glitch-detail-table').innerHTML = makeTable(
+    ['Date','Room','Type','Issue','Description','Compensation','Satisfied?','Status'], glitchDetailRows, {align:['','text-center','','','','','text-center','']}
+  );
+
+  // === 7. F&B DEEP DIVE (dynamic outlets from config) ===
+  const fbOutlets = D.fb_outlet_ratings?.rows || [];
+  const fbGlitches = D.fb_glitches?.rows || [];
+  const fbReviews = D.fb_reviews?.rows || [];
+  const fbEvents = D.fb_event_revenue?.rows || [];
+
+  let fnbStatsHtml = '';
+  CFG.outlets.primary.forEach(o => {
+    const data = fbOutlets.find(r => r[0] === o.key) || [];
+    fnbStatsHtml += statCard(o.label, fmt(data[2],'rating'), `${fmt(data[1],'int')} visits | Food quality`);
+  });
+  fnbStatsHtml += statCard('F&B Incidents', fbGlitches.length, 'from Glitch Reports', fbGlitches.length > 15 ? 'red' : 'green');
+  document.getElementById('fnb-stats').innerHTML = fnbStatsHtml;
+
+  // Radar
+  if (fbOutlets.length) {
+    const radarLabels = ['Food Quality', 'Staff', 'Service', 'Menu'];
+    const outletColorMap = {};
+    CFG.outlets.primary.forEach(o => { outletColorMap[o.key] = o.color; });
+    const radarDatasets = fbOutlets.map(o => ({
+      label: o[0], data: [o[2],o[3],o[4],o[5]].map(v=>parseFloat(v)||0),
+      backgroundColor: 'transparent', borderColor: outletColorMap[o[0]] || '#999', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: outletColorMap[o[0]] || '#999'
+    }));
+    makeChart(document.getElementById('fnbRadarChart').getContext('2d'), { type: 'radar', data: { labels: radarLabels, datasets: radarDatasets },
+      options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 3.5, max: 5, ticks: { stepSize: 0.5 } } } }
+    });
+  }
+
+  // Dynamic outlet cards
+  let fnbCardsHtml = '';
+  const commentKeys = { 'Calabra': 'calabra_comments', 'Palma': 'palma_comments', 'In-Room Dining': 'ird_comments', 'Pool F&B': 'pool_comments' };
+  for (let i = 0; i < CFG.outlets.primary.length; i += 2) {
+    fnbCardsHtml += '<div class="grid-2">';
+    for (let j = i; j < Math.min(i+2, CFG.outlets.primary.length); j++) {
+      const o = CFG.outlets.primary[j];
+      const data = fbOutlets.find(r => r[0] === o.key) || [];
+      const comments = D[commentKeys[o.key]]?.rows || [];
+      fnbCardsHtml += `<div class="card"><h2>${o.label} — Guest Feedback</h2>`;
+      if (data.length) {
+        fnbCardsHtml += `<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.8rem">${fmt(data[1],'int')} guest survey visits</p>`;
+        fnbCardsHtml += ratingBar('Food Quality', data[2]) + ratingBar('Staff', data[3]) + ratingBar('Service', data[4]);
+        if (data[5] && data[5] !== 'None') fnbCardsHtml += ratingBar('Menu', data[5]);
+      } else {
+        fnbCardsHtml += '<p style="font-size:0.75rem;color:var(--text-dim)">No survey data available</p>';
+      }
+      if (comments.length) {
+        fnbCardsHtml += '<h3>Recent Comments</h3>';
+        fnbCardsHtml += comments.slice(0,8).map(c => c[0]&&c[0]!='None' ? `<div class="comment">"${c[0].slice(0,150)}"</div>` : '').join('');
+      }
+      fnbCardsHtml += '</div>';
+    }
+    fnbCardsHtml += '</div>';
+  }
+  document.getElementById('fnb-outlet-cards').innerHTML = fnbCardsHtml;
+
+  if (fbEvents.length) {
+    makeChart(document.getElementById('fnbEventChart').getContext('2d'), {
+      type: 'bar', data: {
+        labels: fbEvents.map(r=>(r[0]||'').slice(0,7)),
+        datasets: [
+          { label: 'Event Revenue', data: fbEvents.map(r=>parseFloat(r[2])||0), backgroundColor: 'rgba(200,169,81,0.6)', borderRadius: 4 },
+          { label: 'Events', data: fbEvents.map(r=>parseInt(r[1])||0), type: 'line', borderColor: '#C8A951', backgroundColor: 'transparent', yAxisID: 'count', pointRadius: 3, borderWidth: 2 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v=>'$'+(v/1e3).toFixed(0)+'K' }}, count: { position:'right', grid:{display:false} } } }
+    });
+  }
+
+  document.getElementById('fnb-glitch-table').innerHTML = makeTable(
+    ['Date','Room','Issue','Description','Compensation','Status'],
+    fbGlitches.map(r => [(r[0]||'').slice(0,10), r[1]||'-', r[2]||'-', `<span style="font-size:0.7rem">${(r[3]||'').slice(0,120)}</span>`, r[4]&&r[4]!='None'?r[4]:'-', r[5]||'-'])
+  );
+
+  document.getElementById('fnb-review-table').innerHTML = makeTable(
+    ['Source','Date','Rating','Review Excerpt'],
+    fbReviews.map(r => [r[0], (r[1]||'').slice(0,10), `<span class="badge ${parseFloat(r[2])>=4?'badge-green':parseFloat(r[2])>=3?'badge-gold':'badge-red'}">${r[2]}</span>`, `<span style="font-size:0.75rem">${(r[3]||'').slice(0,250)}...</span>`])
+  );
+
+  // === 8. CHANNELS ===
+  const chanPerf = D.channel_performance?.rows || [];
+  const chanMonthly = D.channel_monthly?.rows || [];
+  const lraMonthly = D.lra_monthly?.rows || [];
+
+  const lraRow = chanPerf.find(r => r[0]==='LRA') || [];
+  const nlraRow = chanPerf.find(r => r[0]==='NLRA') || [];
+  const otaRow = chanPerf.find(r => r[0]==='OTA') || [];
+  const barRow = chanPerf.find(r => r[0]==='BAR') || [];
+  const consRow = chanPerf.find(r => r[0]==='CONS') || [];
+  const totalChanRev = chanPerf.reduce((s,r)=>s+(parseFloat(r[3])||0),0);
+  const lraTotalRev = (parseFloat(lraRow[3])||0) + (parseFloat(nlraRow[3])||0);
+  const lraPct = totalChanRev > 0 ? (lraTotalRev/totalChanRev*100) : 0;
+
+  document.getElementById('channel-stats').innerHTML =
+    statCard('Design Hotels / Bonvoy', fmt(lraTotalRev,'money'), `${lraPct.toFixed(1)}% of total revenue`) +
+    statCard('OTA', fmt(otaRow[3],'money'), `${(totalChanRev>0?(parseFloat(otaRow[3])||0)/totalChanRev*100:0).toFixed(1)}%`) +
+    statCard('BAR (Direct)', fmt(barRow[3],'money'), `${(totalChanRev>0?(parseFloat(barRow[3])||0)/totalChanRev*100:0).toFixed(1)}%`) +
+    statCard('Consortia', fmt(consRow[3],'money'), `${(totalChanRev>0?(parseFloat(consRow[3])||0)/totalChanRev*100:0).toFixed(1)}%`);
+
+  if (chanMonthly.length) {
+    const months = [...new Set(chanMonthly.map(r=>r[0]))].sort();
+    const channels = [...new Set(chanMonthly.map(r=>r[1]))];
+    const chanColors = {'Design Hotels / Bonvoy':'#C8A951','OTA':'#F85149','BAR (Direct)':'#58A6FF','Consortia':'#E8D5B7','Discount':'#D29922','Packages':'#BC8CFF','Group':'#3FB950','Other':'#484F58','FIT':'#D29922','Redemption':'#79C0FF'};
+    const datasets = channels.map(ch => ({
+      label: ch, data: months.map(m => { const row = chanMonthly.find(r=>r[0]===m&&r[1]===ch); return row ? parseFloat(row[2])||0 : 0; }),
+      backgroundColor: chanColors[ch] || '#BDC3C7'
+    }));
+    makeChart(document.getElementById('channelStackChart').getContext('2d'), { type: 'bar', data: { labels: months, datasets },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } },
+        scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: v=>'$'+(v/1e6).toFixed(1)+'M' } } } }
+    });
+  }
+
+  document.getElementById('channel-perf-table').innerHTML = makeTable(
+    ['Channel','Rooms','ADR','Revenue','% Mix','STLY Rev','vs STLY'],
+    chanPerf.map(r => [segmentLabels[r[0]]||r[0], fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[3],'money'),
+      `${(totalChanRev>0?(parseFloat(r[3])||0)/totalChanRev*100:0).toFixed(1)}%`,
+      fmt(r[7],'money'), `<span class="${pctClass(r[8])}">${fmt(r[8],'pct')}</span>`]),
+    {align:['','text-right','text-right','text-right','text-right','text-right','text-center']}
+  );
+
+  document.getElementById('lra-table').innerHTML = makeTable(
+    ['Month','Segment','Rooms','ADR','Revenue','STLY Rooms','STLY Revenue'],
+    lraMonthly.map(r => [r[0], r[1], fmt(r[2],'int'), fmt(r[3],'money'), fmt(r[4],'money'), fmt(r[5],'int'), fmt(r[6],'money')]),
+    {align:['','','text-right','text-right','text-right','text-right','text-right']}
+  );
+
+  if (lraMonthly.length) {
+    const lraMonths = [...new Set(lraMonthly.map(r=>r[0]))].sort();
+    makeChart(document.getElementById('lraChart').getContext('2d'), { type: 'bar', data: {
+      labels: lraMonths,
+      datasets: [
+        { label: 'LRA', data: lraMonths.map(m => { const r = lraMonthly.find(x=>x[0]===m&&x[1]==='LRA'); return r?parseFloat(r[4])||0:0; }), backgroundColor: 'rgba(26,188,156,0.8)', borderRadius: 4 },
+        { label: 'NLRA', data: lraMonths.map(m => { const r = lraMonthly.find(x=>x[0]===m&&x[1]==='NLRA'); return r?parseFloat(r[4])||0:0; }), backgroundColor: 'rgba(52,152,219,0.8)', borderRadius: 4 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: v=>'$'+(v/1e3).toFixed(0)+'K' } } } }
+    });
+  }
+
+  // === 9. PACE & PICKUP ===
+  const paceMonthly = D.pace_monthly?.rows || [];
+  const pickupSeg = D.pickup_by_segment?.rows || [];
+
+  const totalPickup7d = paceMonthly.reduce((s,r)=>s+(parseFloat(r[3])||0),0);
+  const stlyPickup7d = paceMonthly.reduce((s,r)=>s+(parseFloat(r[7])||0),0);
+  const pickupVsStly = stlyPickup7d > 0 ? (totalPickup7d-stlyPickup7d)/stlyPickup7d*100 : 0;
+  const totalPickupRev = paceMonthly.reduce((s,r)=>s+(parseFloat(r[4])||0),0);
+
+  document.getElementById('pace-stats').innerHTML =
+    statCard('7-Day Room Pickup', fmt(totalPickup7d,'int'), 'rooms') +
+    statCard('7-Day Rev Pickup', fmt(totalPickupRev,'money')) +
+    statCard('vs STLY Pickup', fmt(pickupVsStly,'pct'), '', pickupVsStly>=0?'green':'red') +
+    statCard('STLY 7-Day Pickup', fmt(stlyPickup7d,'int'), 'rooms');
+
+  if (paceMonthly.length) {
+    makeChart(document.getElementById('pickupChart').getContext('2d'), { type: 'bar', data: {
+      labels: paceMonthly.map(r=>r[0]),
+      datasets: [
+        { label: '7-Day Rev Pickup', data: paceMonthly.map(r=>parseFloat(r[4])||0), backgroundColor: 'rgba(200,169,81,0.7)', borderRadius: 4 },
+        { label: 'STLY 7-Day Rev Pickup', data: paceMonthly.map(r=>parseFloat(r[8])||0), backgroundColor: 'rgba(127,140,141,0.4)', borderRadius: 4 },
+        { label: 'Room Pickup', data: paceMonthly.map(r=>parseFloat(r[3])||0), type: 'line', borderColor: '#F85149', yAxisID: 'rooms', pointRadius: 4, borderWidth: 2 },
+        { label: 'STLY Room Pickup', data: paceMonthly.map(r=>parseFloat(r[7])||0), type: 'line', borderColor: '#F39C12', yAxisID: 'rooms', pointRadius: 3, borderWidth: 1.5, borderDash: [5,5] }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v=>'$'+(v/1e3).toFixed(0)+'K' }}, rooms: { position:'right', grid:{display:false} } } }
+    });
+  }
+
+  document.getElementById('pace-table').innerHTML = makeTable(
+    ['Month','OTB Rooms','OTB Revenue','Budget Rev','vs Budget','Forecast Rev','STLY Rev','vs STLY'],
+    paceMonthly.map(r => {
+      const pRev=parseFloat(r[2])||0; const bud=parseFloat(r[12])||0; const stly=parseFloat(r[6])||0;
+      return [r[0], fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[12],'money'),
+        `<span class="${bud>0?(pRev>=bud?'positive':'negative'):''}">${bud>0?fmt((pRev-bud)/bud*100,'pct'):'-'}</span>`,
+        fmt(r[10],'money'), fmt(r[6],'money'),
+        `<span class="${stly>0?(pRev>=stly?'positive':'negative'):''}">${stly>0?fmt((pRev-stly)/stly*100,'pct'):'-'}</span>`];
+    }),
+    {align:['','text-right','text-right','text-right','text-center','text-right','text-right','text-center']}
+  );
+
+  document.getElementById('pickup-segment-table').innerHTML = makeTable(
+    ['Segment','7D Room Pickup','7D Rev Pickup','STLY Room Pickup','STLY Rev Pickup'],
+    pickupSeg.filter(r=>parseFloat(r[1])!=0||parseFloat(r[2])!=0).map(r => [
+      segmentLabels[r[0]]||r[0], fmt(r[1],'int'), fmt(r[2],'money'), fmt(r[3],'int'), fmt(r[4],'money')
+    ]),
+    {align:['','text-right','text-right','text-right','text-right']}
+  );
+}
+
+// Load property data
+fetch(CFG.dataFile).then(r=>r.json()).then(d => { D = d; render(); });
+</script>
+</body>
+</html>
