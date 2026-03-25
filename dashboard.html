@@ -246,6 +246,8 @@ function showPage(id, el) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (el) el.classList.add('active');
+  // Re-render charts after tab switch so Chart.js can measure visible canvas
+  chartInstances.forEach(c => c.resize());
 }
 
 function setDateFilter(val) { currentFilter = val; destroyCharts(); render(); }
