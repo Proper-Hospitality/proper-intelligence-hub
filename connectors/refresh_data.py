@@ -10,15 +10,15 @@ Usage:
     python refresh_data.py --dry-run          # Print queries without executing
 
 Requirements:
-    pip install snowflake-connector-python
+    pip install snowflake-connector-python cryptography
 
 Environment variables:
-    SNOWFLAKE_ACCOUNT   — Snowflake account identifier
-    SNOWFLAKE_USER      — Username
-    SNOWFLAKE_PASSWORD  — Password
-    SNOWFLAKE_WAREHOUSE — Warehouse name
-    SNOWFLAKE_DATABASE  — Database name (default: PROPER_DW)
-    SNOWFLAKE_SCHEMA    — Schema name (default: DASHBOARD)
+    SNOWFLAKE_ACCOUNT       — Snowflake account identifier
+    SNOWFLAKE_USER          — Username
+    SNOWFLAKE_PRIVATE_KEY   — Private key contents (PEM format)
+    SNOWFLAKE_WAREHOUSE     — Warehouse name
+    SNOWFLAKE_DATABASE      — Database name (default: PROPER_DW)
+    SNOWFLAKE_SCHEMA        — Schema name (default: DASHBOARD)
 """
 
 import json
@@ -113,12 +113,29 @@ QUERIES = {
 }
 
 
+def get_private_key():
+    """Load private key from environment variable (PEM format)."""
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import serialization
+
+    private_key_pem = os.environ["SNOWFLAKE_PRIVATE_KEY"]
+    # Handle escaped newlines from GitHub secrets
+    private_key_pem = private_key_pem.replace("\\n", "\n")
+
+    private_key = serialization.load_pem_private_key(
+        private_key_pem.encode("utf-8"),
+        password=None,
+        backend=default_backend(),
+    )
+    return private_key
+
+
 def get_connection():
-    """Create Snowflake connection from environment variables."""
+    """Create Snowflake connection using key-pair authentication."""
     return snowflake.connector.connect(
         account=os.environ["SNOWFLAKE_ACCOUNT"],
         user=os.environ["SNOWFLAKE_USER"],
-        password=os.environ["SNOWFLAKE_PASSWORD"],
+        private_key=get_private_key(),
         warehouse=os.environ.get("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH"),
         database=os.environ.get("SNOWFLAKE_DATABASE", "PROPER_DW"),
         schema=os.environ.get("SNOWFLAKE_SCHEMA", "DASHBOARD"),
